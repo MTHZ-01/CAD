@@ -1,0 +1,29 @@
+Started : "Generate Programming File".
+Running bitgen...
+Command Line: bitgen -intstyle ise -f CAD971Test.ut CAD971Test.ncd
+ERROR:PhysDesignRules:368 - The signal <Leds<0>_OBUF> is incomplete. The signal
+   is not driven by any source pin in the design.
+ERROR:PhysDesignRules:368 - The signal <Leds<1>_OBUF> is incomplete. The signal
+   is not driven by any source pin in the design.
+ERROR:PhysDesignRules:368 - The signal <Leds<2>_OBUF> is incomplete. The signal
+   is not driven by any source pin in the design.
+ERROR:PhysDesignRules:368 - The signal <Leds<3>_OBUF> is incomplete. The signal
+   is not driven by any source pin in the design.
+ERROR:PhysDesignRules:368 - The signal <Leds<4>_OBUF> is incomplete. The signal
+   is not driven by any source pin in the design.
+ERROR:PhysDesignRules:368 - The signal <Leds<5>_OBUF> is incomplete. The signal
+   is not driven by any source pin in the design.
+ERROR:PhysDesignRules:368 - The signal <Leds<6>_OBUF> is incomplete. The signal
+   is not driven by any source pin in the design.
+ERROR:PhysDesignRules:368 - The signal <Leds<7>_OBUF> is incomplete. The signal
+   is not driven by any source pin in the design.
+ERROR:PhysDesignRules:10 - The network <Leds<0>_OBUF> is completely unrouted.
+ERROR:PhysDesignRules:10 - The network <Leds<1>_OBUF> is completely unrouted.
+ERROR:PhysDesignRules:10 - The network <Leds<2>_OBUF> is completely unrouted.
+ERROR:PhysDesignRules:10 - The network <Leds<3>_OBUF> is completely unrouted.
+ERROR:PhysDesignRules:10 - The network <Leds<4>_OBUF> is completely unrouted.
+ERROR:PhysDesignRules:10 - The network <Leds<5>_OBUF> is completely unrouted.
+ERROR:PhysDesignRules:10 - The network <Leds<6>_OBUF> is completely unrouted.
+ERROR:PhysDesignRules:10 - The network <Leds<7>_OBUF> is completely unrouted.
+ERROR:Bitgen:25 - DRC detected 16 errors and 0 warnings.  Please see the
+   previously displayed individual error or warning messages for more details.		

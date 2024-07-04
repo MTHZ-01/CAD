@@ -1,0 +1,122 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity CAD971Test is
+    Port(
+        --//////////// CLOCK //////////
+        CLOCK_24    : in std_logic;
+        
+        --//////////// KEY //////////
+        RESET_N : in std_logic;
+        
+        --//////////// VGA //////////
+        VGA_B       : out std_logic_vector(1 downto 0);
+        VGA_G       : out std_logic_vector(1 downto 0);
+        VGA_HS  : out std_logic;
+        VGA_R       : out std_logic_vector(1 downto 0);
+        VGA_VS  : out std_logic;
+        
+        --//////////// KEYS //////////
+        Key : in std_logic_vector(3 downto 0);
+        SW : in std_logic_vector(7 downto 0);
+        
+        --//////////// LEDS //////////
+        Leds : out std_logic_vector(7 downto 0);
+        
+        --////////// 7 SEG ///////////
+        HEX0 : out std_logic_vector(6 downto 0);
+        HEX1 : out std_logic_vector(6 downto 0)
+    );
+end CAD971Test;
+
+architecture Behavior of CAD971Test is
+
+component VGA_Square
+port(
+    CLK_24MHz     : in std_logic;
+    RESET         : in std_logic;
+    BtnUp         : in std_logic;
+    BtnRoll       : in std_logic;
+    end_game      : in bit;
+    score         : out integer;
+    lose          : out bit;
+    ColorOut      : out std_logic_vector(5 downto 0);
+    SQUAREWIDTH   : in std_logic_vector(7 downto 0);
+    ScanlineX     : in std_logic_vector(10 downto 0);
+    ScanlineY     : in std_logic_vector(10 downto 0);
+    DiceValueOut  : out std_logic_vector(3 downto 0)
+);
+end component;
+
+signal score : integer;
+signal lose : bit;
+signal end_game : bit := '0';
+signal ScanlineX : std_logic_vector(10 downto 0);
+signal ScanlineY : std_logic_vector(10 downto 0);
+signal ColorOut : std_logic_vector(5 downto 0);
+signal DiceValueOut : std_logic_vector(3 downto 0);
+signal clk25 : std_logic;
+
+begin
+
+    -- PLL instance to generate 25MHz clock from 24MHz input
+    process(CLOCK_24)
+    begin
+        clk25 <= not clk25 after 20.83 ns; -- Generate a 24MHz clock
+    end process;
+
+    -- VGA Controller instantiation
+    vga_ctrl : entity work.VGA_Controller
+        port map (
+            pixel_clk => clk25,
+            reset => RESET_N,
+            hsync => VGA_HS,
+            vsync => VGA_VS,
+            pixel_x => ScanlineX,
+            pixel_y => ScanlineY
+        );
+
+    -- VGA_Square instantiation
+    vga_square : entity work.VGA_Square
+        port map (
+            CLK_24MHz => CLOCK_24,
+            RESET => RESET_N,
+            BtnUp => Key(0),
+            BtnRoll => Key(1),
+            end_game => end_game,
+            score => score,
+            lose => lose,
+            ColorOut => ColorOut,
+            SQUAREWIDTH => "00101000", -- Example square width value
+            ScanlineX => ScanlineX,
+            ScanlineY => ScanlineY,
+            DiceValueOut => DiceValueOut
+        );
+
+    -- Map the color outputs to VGA signals
+    VGA_R <= ColorOut(5 downto 4);
+    VGA_G <= ColorOut(3 downto 2);
+    VGA_B <= ColorOut(1 downto 0);
+
+    -- 7-Segment Display Decoder
+    process(DiceValueOut)
+    begin
+        case DiceValueOut is
+            when "0001" => HEX0 <= "1001111"; -- Display '1'
+            when "0010" => HEX0 <= "0010010"; -- Display '2'
+            when "0011" => HEX0 <= "0000110"; -- Display '3'
+            when "0100" => HEX0 <= "1001100"; -- Display '4'
+            when "0101" => HEX0 <= "0100100"; -- Display '5'
+            when "0110" => HEX0 <= "0100000"; -- Display '6'
+            when others => HEX0 <= "1111111"; -- Display nothing for invalid values
+        end case;
+    end process;
+
+    -- Unused 7-segment display set to off
+    HEX1 <= "1111111";
+    
+    -- LED Outputs
+    Leds <= SW; -- Example connection to switches (you may modify as needed)
+
+end Behavior;

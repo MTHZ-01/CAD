@@ -1,0 +1,179 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity VGA_Square is
+  port (
+    CLK_24MHz      : in std_logic;
+    RESET          : in std_logic;
+    BtnUp          : in std_logic;  -- Single button input for moving the square
+    BtnRoll        : in std_logic;  -- Single button input for rolling the dice
+    end_game       : in bit;
+    score          : out integer;
+    lose           : out bit;
+    ColorOut       : out std_logic_vector(5 downto 0); -- RED & GREEN & BLUE
+    SQUAREWIDTH    : in std_logic_vector(7 downto 0);
+    ScanlineX      : in std_logic_vector(10 downto 0);
+    ScanlineY      : in std_logic_vector(10 downto 0);
+    DiceValueOut   : out std_logic_vector(3 downto 0) -- Output dice value for 7-segment display
+  );
+end VGA_Square;
+
+architecture Behavioral of VGA_Square is
+
+  signal ColorOutput: std_logic_vector(5 downto 0);
+  signal current_x, current_y: integer := 0; -- Track the current position of the square
+  signal BtnUp_delayed, BtnRoll_delayed: std_logic := '0';    -- Delayed button signals for edge detection
+  signal move_right: boolean := true;        -- Direction flag
+  signal dice_value: integer range 1 to 6 := 1;           -- Dice roll value
+  signal move_counter: integer := 0;         -- Counter for the number of moves left based on dice value
+
+  constant GRID_SIZE_X: integer := 40;
+  constant GRID_SIZE_Y: integer := 40;
+  constant SQUARE_MARGIN: integer := 10;     -- Margin from the edges of the box
+
+  -- Debouncing signals
+  signal BtnUp_stable, BtnRoll_stable: std_logic := '0';
+  signal BtnUp_counter, BtnRoll_counter: integer := 0;
+  constant DEBOUNCE_DELAY: integer := 100000; -- Adjust as needed for debounce delay
+
+  -- LFSR for random number generation
+  signal pseudo_rand: std_logic_vector(31 downto 0) := (others => '0'); -- Initial seed for LFSR
+
+  -- Maximal length 32-bit xnor LFSR function
+  function lfsr32(x : std_logic_vector(31 downto 0)) return std_logic_vector is
+  begin
+    return x(30 downto 0) & (x(0) xnor x(1) xnor x(21) xnor x(31));
+  end function;
+
+begin
+
+  -- Debounce process for BtnUp
+  process(CLK_24MHz, RESET)
+  begin
+    if RESET = '1' then
+      BtnUp_counter <= 0;
+      BtnUp_stable <= '0';
+    elsif rising_edge(CLK_24MHz) then
+      if BtnUp = BtnUp_stable then
+        BtnUp_counter <= 0;
+      else
+        BtnUp_counter <= BtnUp_counter + 1;
+        if BtnUp_counter >= DEBOUNCE_DELAY then
+          BtnUp_stable <= BtnUp;
+          BtnUp_counter <= 0;
+        end if;
+      end if;
+    end if;
+  end process;
+
+  -- Debounce process for BtnRoll
+  process(CLK_24MHz, RESET)
+  begin
+    if RESET = '1' then
+      BtnRoll_counter <= 0;
+      BtnRoll_stable <= '0';
+    elsif rising_edge(CLK_24MHz) then
+      if BtnRoll = BtnRoll_stable then
+        BtnRoll_counter <= 0;
+      else
+        BtnRoll_counter <= BtnRoll_counter + 1;
+        if BtnRoll_counter >= DEBOUNCE_DELAY then
+          BtnRoll_stable <= BtnRoll;
+          BtnRoll_counter <= 0;
+        end if;
+      end if;
+    end if;
+  end process;
+
+  -- LFSR process for random number generation
+  process(CLK_24MHz, RESET)
+  begin
+    if RESET = '1' then
+      pseudo_rand <= (others => '0'); -- Reset LFSR seed
+    elsif rising_edge(CLK_24MHz) then
+      pseudo_rand <= lfsr32(pseudo_rand); -- Update LFSR
+    end if;
+  end process;
+
+  -- Process to handle button press and update position based on dice roll
+  process(CLK_24MHz, RESET)
+  begin
+    if RESET = '1' then
+      current_x <= 0;
+      current_y <= 0; -- Initialize to the bottom left of the grid
+      move_right <= true;
+      dice_value <= 1;
+      move_counter <= 0;
+    elsif rising_edge(CLK_24MHz) then
+      if end_game = '0' then
+        BtnUp_delayed <= BtnUp_stable;
+        BtnRoll_delayed <= BtnRoll_stable;
+
+        -- Detect button press edge for rolling the dice
+        if BtnRoll_stable = '1' and BtnRoll_delayed = '0' then
+          dice_value <= (to_integer(unsigned(pseudo_rand(2 downto 0))) mod 6) + 1; -- Simulate dice roll (1 to 6)
+          move_counter <= dice_value; -- Set move counter to dice value
+        end if;
+
+        -- Detect button press edge for moving the square
+        if BtnUp_stable = '1' and BtnUp_delayed = '0' and move_counter > 0 then
+          if move_right then
+            if current_x < 15 then
+              current_x <= current_x + 1;
+            else
+              if current_y < 15 then -- Move up if at the right edge
+                current_y <= current_y + 1;
+                move_right <= false;
+              end if;
+            end if;
+          else
+            if current_x > 0 then
+              current_x <= current_x - 1;
+            else
+              if current_y < 15 then -- Move up if at the left edge
+                current_y <= current_y + 1;
+                move_right <= true;
+              end if;
+            end if;
+          end if;
+          move_counter <= move_counter - 1; -- Decrement the move counter
+        end if;
+      end if;
+    end if;
+  end process;
+
+  -- Process to render the square and grid
+  process(CLK_24MHz, RESET)
+  begin
+    if RESET = '1' then
+      ColorOutput <= "000000";
+    elsif rising_edge(CLK_24MHz) then
+      if end_game = '0' then
+        -- Default color to background (black)
+        ColorOutput <= "000000";
+
+        -- Convert std_logic_vector to integer using numeric_std library
+        if (to_integer(unsigned(ScanlineX)) mod GRID_SIZE_X = 0) or (to_integer(unsigned(ScanlineY)) mod GRID_SIZE_Y = 0) then
+          ColorOutput <= "111111"; -- Grid lines color (white)
+        else
+          -- Draw square at the current position
+          if (to_integer(unsigned(ScanlineX)) >= current_x * GRID_SIZE_X + SQUARE_MARGIN and 
+              to_integer(unsigned(ScanlineX)) < (current_x + 1) * GRID_SIZE_X - SQUARE_MARGIN and
+              to_integer(unsigned(ScanlineY)) >= current_y * GRID_SIZE_Y + SQUARE_MARGIN and 
+              to_integer(unsigned(ScanlineY)) < (current_y + 1) * GRID_SIZE_Y - SQUARE_MARGIN) then
+            ColorOutput <= "111000"; -- Small square color (yellow)
+          end if;
+        end if;
+      else
+        ColorOutput <= "000000"; -- Background color (black) when game ends
+      end if;
+    end if;
+  end process;
+
+  ColorOut <= ColorOutput;
+
+  -- Output dice value to 7-segment display (converting integer to std_logic_vector)
+  DiceValueOut <= std_logic_vector(to_unsigned(dice_value, 4));
+
+end Behavioral;

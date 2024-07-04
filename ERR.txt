@@ -1,0 +1,35 @@
+
+Annotating constraints to design from ucf file "vga.ucf" ...
+Resolving constraint associations...
+Checking Constraint Associations...
+ERROR:ConstraintSystem:59 - Constraint <NET "Key[0]"     LOC = P78;>
+   [vga.ucf(22)]: NET "Key[0]" not found.  Please verify that:
+   1. The specified design element actually exists in the original design.
+   2. The specified object is spelled correctly in the constraint source file.
+
+WARNING:ConstraintSystem - A target design object for the Locate constraint
+   '<NET "Key[0]"     LOC = P78;> [vga.ucf(22)]' could not be found and so the
+   Locate constraint will be removed.
+
+ERROR:ConstraintSystem:59 - Constraint <NET "Key[1]"     LOC = P75;>
+   [vga.ucf(23)]: NET "Key[1]" not found.  Please verify that:
+   1. The specified design element actually exists in the original design.
+   2. The specified object is spelled correctly in the constraint source file.
+
+WARNING:ConstraintSystem - A target design object for the Locate constraint
+   '<NET "Key[1]"     LOC = P75;> [vga.ucf(23)]' could not be found and so the
+   Locate constraint will be removed.
+
+ERROR:ConstraintSystem:59 - Constraint <NET "Key[2]"     LOC = P67;>
+   [vga.ucf(24)]: NET "Key[2]" not found.  Please verify that:
+   1. The specified design element actually exists in the original design.
+   2. The specified object is spelled correctly in the constraint source file.
+
+WARNING:ConstraintSystem - A target design object for the Locate constraint
+   '<NET "Key[2]"     LOC = P67;> [vga.ucf(24)]' could not be found and so the
+   Locate constraint will be removed.
+
+ERROR:ConstraintSystem:59 - Constraint <NET "Key[3]"     LOC = P74;>
+   [vga.ucf(25)]: NET "Key[3]" not found.  Please verify that:
+   1. The specified design element actually exists in the original design.
+   2. The specified object is spelled correctly in the constraint source file.
